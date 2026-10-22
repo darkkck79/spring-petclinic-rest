@@ -19,6 +19,7 @@ package org.springframework.samples.petclinic.rest.controller;
 import org.springframework.samples.petclinic.rest.controller.v1.VisitRestControllerV1;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,7 +43,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -102,6 +105,7 @@ class VisitRestControllerV1Tests {
     	visit.setPet(pet);
         visit.setDate(LocalDate.now());
     	visit.setDescription("rabies shot");
+    	visit.setNotes("Owner reports mild lethargy.");
     	visits.add(visit);
 
     	visit = new Visit();
@@ -123,7 +127,19 @@ class VisitRestControllerV1Tests {
             .andExpect(status().isOk())
             .andExpect(content().contentType("application/json"))
             .andExpect(jsonPath("$.id").value(2))
-            .andExpect(jsonPath("$.description").value("rabies shot"));
+            .andExpect(jsonPath("$.description").value("rabies shot"))
+            .andExpect(jsonPath("$.notes").value("Owner reports mild lethargy."));
+    }
+
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testGetVisitWithoutNotes() throws Exception {
+    	given(this.clinicService.findVisitById(3)).willReturn(visits.get(1));
+        this.mockMvc.perform(get("/api/visits/3")
+        	.accept(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(3))
+            .andExpect(jsonPath("$.notes").doesNotExist());
     }
 
     @Test
@@ -145,6 +161,7 @@ class VisitRestControllerV1Tests {
             .andExpect(content().contentType("application/json"))
         	.andExpect(jsonPath("$.[0].id").value(2))
         	.andExpect(jsonPath("$.[0].description").value("rabies shot"))
+        	.andExpect(jsonPath("$.[0].notes").value("Owner reports mild lethargy."))
         	.andExpect(jsonPath("$.[1].id").value(3))
         	.andExpect(jsonPath("$.[1].description").value("neutered"));
     }
@@ -170,6 +187,54 @@ class VisitRestControllerV1Tests {
     	this.mockMvc.perform(post("/api/visits")
     		.content(newVisitAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
     		.andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testCreateVisitWithoutNotesSuccess() throws Exception {
+    	Visit newVisit = visits.get(0);
+    	newVisit.setId(null);
+    	newVisit.setNotes(null);
+    	ObjectMapper mapper = new ObjectMapper();
+        String newVisitAsJSON = mapper.writeValueAsString(visitMapper.toVisitDto(newVisit));
+    	this.mockMvc.perform(post("/api/visits")
+    		.content(newVisitAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
+    		.andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testCreateVisitNotesTooLongError() throws Exception {
+    	Visit newVisit = visits.get(0);
+    	newVisit.setId(null);
+    	newVisit.setNotes("x".repeat(1025));
+    	ObjectMapper mapper = new ObjectMapper();
+        String newVisitAsJSON = mapper.writeValueAsString(visitMapper.toVisitDto(newVisit));
+    	this.mockMvc.perform(post("/api/visits")
+    		.content(newVisitAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
+    		.andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testUpdateVisitNotesSuccess() throws Exception {
+    	Visit existingVisit = visits.get(0);
+    	given(this.clinicService.findVisitById(2)).willReturn(existingVisit);
+    	Visit requestVisit = new Visit();
+    	requestVisit.setId(2);
+    	requestVisit.setPet(existingVisit.getPet());
+    	requestVisit.setDate(existingVisit.getDate());
+    	requestVisit.setDescription(existingVisit.getDescription());
+    	requestVisit.setNotes("Follow up in two weeks");
+    	ObjectMapper mapper = new ObjectMapper();
+        String newVisitAsJSON = mapper.writeValueAsString(visitMapper.toVisitDto(requestVisit));
+    	this.mockMvc.perform(put("/api/visits/2")
+    		.content(newVisitAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
+        	.andExpect(status().isNoContent());
+
+    	ArgumentCaptor<Visit> captor = ArgumentCaptor.forClass(Visit.class);
+    	verify(this.clinicService).saveVisit(captor.capture());
+    	assertEquals("Follow up in two weeks", captor.getValue().getNotes());
     }
 
     @Test

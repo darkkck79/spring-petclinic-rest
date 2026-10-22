@@ -230,6 +230,35 @@ abstract class AbstractClinicServiceTests {
     	Visit visit = this.clinicService.findVisitById(1);
     	assertThat(visit.getId()).isEqualTo(1);
     	assertThat(visit.getPet().getName()).isEqualTo("Samantha");
+    	assertThat(visit.getNotes()).isEqualTo("First rabies vaccination");
+    	assertThat(this.clinicService.findVisitById(2).getNotes()).isNull();
+    }
+
+    @Test
+    @Transactional
+    void shouldInsertVisitWithNotes() {
+        Pet pet = this.clinicService.findPetById(1);
+
+        Visit visit = new Visit();
+        visit.setPet(pet);
+        visit.setDate(LocalDate.now());
+        visit.setDescription("visit with notes");
+        visit.setNotes("Bring stool sample next time");
+
+        this.clinicService.saveVisit(visit);
+
+        Visit reloaded = this.clinicService.findVisitById(visit.getId());
+        assertThat(reloaded.getNotes()).isEqualTo("Bring stool sample next time");
+    }
+
+    @Test
+    @Transactional
+    void shouldUpdateVisitNotes() {
+        Visit visit = this.clinicService.findVisitById(1);
+        visit.setNotes("Updated notes");
+        this.clinicService.saveVisit(visit);
+        visit = this.clinicService.findVisitById(1);
+        assertThat(visit.getNotes()).isEqualTo("Updated notes");
     }
 
     @Test
