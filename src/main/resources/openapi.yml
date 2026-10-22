@@ -2278,6 +2278,13 @@ components:
           minLength: 1
           maxLength: 255
           example: 'rabies shot'
+        notes:
+          title: Notes
+          description: Optional free-text notes about the visit.
+          type: string
+          maxLength: 1024
+          nullable: true
+          example: 'Owner reports mild lethargy.'
       required:
         - description
     Visit:
