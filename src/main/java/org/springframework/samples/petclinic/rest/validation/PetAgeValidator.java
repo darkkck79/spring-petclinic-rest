@@ -24,7 +24,7 @@ public class PetAgeValidator implements ConstraintValidator<PetAgeValidation, Lo
             return false;
         }
 
-        if (birthDate.isBefore(today.minusYears(50))) {
+        if (birthDate.isBefore(today.minusYears(5))) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(
                 "Birth date cannot be older than 50 years"
