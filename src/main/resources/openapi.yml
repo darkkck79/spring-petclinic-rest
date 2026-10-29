@@ -842,6 +842,18 @@ paths:
       operationId: listPets
       summary: Lists pet
       description: Returns an array of pet .
+      parameters:
+        - name: sort
+          in: query
+          description: Sort order. A leading '-' means descending. Ties are broken by pet id ascending.
+          required: false
+          schema:
+            type: string
+            enum:
+              - name
+              - -name
+              - birthDate
+              - -birthDate
       responses:
         200:
           description: Pet types found and returned.
@@ -863,6 +875,12 @@ paths:
               description: An ID for this version of the response.
               schema:
                 type: string
+        400:
+          description: Invalid sort parameter.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         500:
           description: Server error.
           content:

@@ -31,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.samples.petclinic.model.Pet;
 import org.springframework.samples.petclinic.model.PetType;
 import org.springframework.samples.petclinic.repository.PetRepository;
+import org.springframework.samples.petclinic.repository.PetSort;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -73,6 +74,18 @@ public class JpaPetRepositoryImpl implements PetRepository {
 	@Override
 	public Collection<Pet> findAll() throws DataAccessException {
 		return this.em.createQuery("SELECT pet FROM Pet pet").getResultList();
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Collection<Pet> findAll(PetSort sort) throws DataAccessException {
+		String orderBy = switch (sort) {
+			case NAME_ASC -> "LOWER(pet.name) ASC, pet.id ASC";
+			case NAME_DESC -> "LOWER(pet.name) DESC, pet.id ASC";
+			case BIRTH_DATE_ASC -> "pet.birthDate ASC, pet.id ASC";
+			case BIRTH_DATE_DESC -> "pet.birthDate DESC, pet.id ASC";
+		};
+		return this.em.createQuery("SELECT pet FROM Pet pet ORDER BY " + orderBy).getResultList();
 	}
 
     @Override

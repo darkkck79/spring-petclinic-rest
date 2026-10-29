@@ -16,11 +16,14 @@
 
 package org.springframework.samples.petclinic.repository.springdatajpa;
 
+import java.util.Collection;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.samples.petclinic.model.Pet;
+import org.springframework.samples.petclinic.repository.PetSort;
 
 /**
  * @author Vitaliy Fedoriv
@@ -32,6 +35,18 @@ public class SpringDataPetRepositoryImpl implements PetRepositoryOverride {
 
 	@PersistenceContext
     private EntityManager em;
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Collection<Pet> findAll(PetSort sort) {
+		String orderBy = switch (sort) {
+			case NAME_ASC -> "LOWER(pet.name) ASC, pet.id ASC";
+			case NAME_DESC -> "LOWER(pet.name) DESC, pet.id ASC";
+			case BIRTH_DATE_ASC -> "pet.birthDate ASC, pet.id ASC";
+			case BIRTH_DATE_DESC -> "pet.birthDate DESC, pet.id ASC";
+		};
+		return this.em.createQuery("SELECT pet FROM Pet pet ORDER BY " + orderBy).getResultList();
+	}
 
 	@Override
 	public void delete(Pet pet) {

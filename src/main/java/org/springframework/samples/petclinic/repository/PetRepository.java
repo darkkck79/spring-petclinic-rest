@@ -69,6 +69,15 @@ public interface PetRepository {
      */
 	Collection<Pet> findAll() throws DataAccessException;
 
+    /**
+     * Retrieve all <code>Pet</code>s in the given order, sorted by the data store. Names compare
+     * case-insensitively and ties are always broken by id ascending.
+     *
+     * @param sort the requested order
+     * @return a <code>Collection</code> of <code>Pet</code>s in the requested order
+     */
+    Collection<Pet> findAll(PetSort sort) throws DataAccessException;
+
     Page<Pet> findAll(Pageable pageable) throws DataAccessException;
 
     /**

@@ -70,6 +70,12 @@ public class ClinicServiceImpl implements ClinicService {
 
     @Override
     @Transactional(readOnly = true)
+    public Collection<Pet> findAllPets(PetSort sort) throws DataAccessException {
+        return petRepository.findAll(sort);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<Pet> findPets(Pageable pageable) throws DataAccessException {
         return petRepository.findAll(pageable);
     }
