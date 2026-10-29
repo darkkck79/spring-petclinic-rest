@@ -553,5 +553,32 @@ abstract class AbstractClinicServiceTests {
         }
     }
 
+    @Test
+    void shouldFindOwnersByCityIgnoringCase() {
+        Collection<Owner> owners = this.clinicService.findOwnerByCity("mAdIsOn");
+        assertThat(owners.size()).isEqualTo(4);
+        Set<Integer> ids = owners.stream().map(Owner::getId).collect(Collectors.toSet());
+        assertThat(ids).containsExactlyInAnyOrder(1, 5, 8, 9);
+        for (Owner owner : owners) {
+            assertThat(owner.getCity()).isEqualToIgnoringCase("Madison");
+        }
+    }
+
+    @Test
+    void shouldFindOwnersByLastNameAndCity() {
+        Collection<Owner> owners = this.clinicService.findOwnerByLastNameAndCity("Franklin", "madison");
+        assertThat(owners.size()).isEqualTo(1);
+        Owner owner = owners.iterator().next();
+        assertThat(owner.getId()).isEqualTo(1);
+        assertThat(owner.getLastName()).isEqualTo("Franklin");
+        assertThat(owner.getCity()).isEqualToIgnoringCase("Madison");
+    }
+
+    @Test
+    void shouldNotFindOwnersWhenLastNameAndCityDoNotMatchTogether() {
+        Collection<Owner> owners = this.clinicService.findOwnerByLastNameAndCity("Davis", "Madison");
+        assertThat(owners).isEmpty();
+    }
+
     void clearCache() {}
 }

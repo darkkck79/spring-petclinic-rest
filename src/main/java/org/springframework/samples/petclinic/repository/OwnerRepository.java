@@ -48,6 +48,27 @@ public interface OwnerRepository {
     Page<Owner> findByLastName(String lastName, Pageable pageable) throws DataAccessException;
 
     /**
+     * Retrieve <code>Owner</code>s from the data store by city, returning all owners whose city matches the given city
+     * exactly (case-insensitive).
+     *
+     * @param city Value to search for
+     * @return a <code>Collection</code> of matching <code>Owner</code>s (or an empty <code>Collection</code> if none
+     * found)
+     */
+    Collection<Owner> findByCity(String city) throws DataAccessException;
+
+    /**
+     * Retrieve <code>Owner</code>s from the data store by last name and city. Last name is a prefix match, city is an
+     * exact match (case-insensitive). Both conditions must be met.
+     *
+     * @param lastName Value to search for (prefix match)
+     * @param city Value to search for (exact match, case-insensitive)
+     * @return a <code>Collection</code> of matching <code>Owner</code>s (or an empty <code>Collection</code> if none
+     * found)
+     */
+    Collection<Owner> findByLastNameAndCity(String lastName, String city) throws DataAccessException;
+
+    /**
      * Retrieve an <code>Owner</code> from the data store by id.
      *
      * @param id the id to search for

@@ -119,6 +119,23 @@ public class JpaOwnerRepositoryImpl implements OwnerRepository {
     }
 
 	@Override
+	@SuppressWarnings("unchecked")
+	public Collection<Owner> findByCity(String city) {
+		Query query = this.em.createQuery("SELECT DISTINCT owner FROM Owner owner left join fetch owner.pets WHERE LOWER(owner.city) = LOWER(:city)");
+		query.setParameter("city", city);
+		return query.getResultList();
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public Collection<Owner> findByLastNameAndCity(String lastName, String city) {
+		Query query = this.em.createQuery("SELECT DISTINCT owner FROM Owner owner left join fetch owner.pets WHERE owner.lastName LIKE :lastName AND LOWER(owner.city) = LOWER(:city)");
+		query.setParameter("lastName", lastName + "%");
+		query.setParameter("city", city);
+		return query.getResultList();
+	}
+
+	@Override
 	public void delete(Owner owner) throws DataAccessException {
 		this.em.remove(this.em.contains(owner) ? owner : this.em.merge(owner));
 	}

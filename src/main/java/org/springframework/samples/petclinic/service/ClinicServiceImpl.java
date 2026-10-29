@@ -244,6 +244,18 @@ public class ClinicServiceImpl implements ClinicService {
 
     @Override
     @Transactional(readOnly = true)
+    public Collection<Owner> findOwnerByCity(String city) throws DataAccessException {
+        return ownerRepository.findByCity(city);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Collection<Owner> findOwnerByLastNameAndCity(String lastName, String city) throws DataAccessException {
+        return ownerRepository.findByLastNameAndCity(lastName, city);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Collection<Visit> findVisitsByPetId(int petId) {
         return visitRepository.findByPetId(petId);
     }

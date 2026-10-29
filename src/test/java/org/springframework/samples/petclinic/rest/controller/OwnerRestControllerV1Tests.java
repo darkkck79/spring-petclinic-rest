@@ -623,4 +623,43 @@ class OwnerRestControllerV1Tests {
             .andExpect(status().isNotFound());
     }
 
+    @Test
+    @WithMockUser(roles = "OWNER_ADMIN")
+    void testGetOwnersListByCitySuccess() throws Exception {
+        List<OwnerDto> madisonOwners = new ArrayList<>();
+        madisonOwners.add(owners.get(0));
+        given(this.clinicService.findOwnerByCity("madison")).willReturn(ownerMapper.toOwners(madisonOwners));
+        this.mockMvc.perform(get("/api/owners?city=madison")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType("application/json"))
+            .andExpect(jsonPath("$.[0].id").value(1))
+            .andExpect(jsonPath("$.[0].city").value("Madison"));
+    }
+
+    @Test
+    @WithMockUser(roles = "OWNER_ADMIN")
+    void testGetOwnersListByCityNotFound() throws Exception {
+        List<OwnerDto> noOwners = new ArrayList<>();
+        given(this.clinicService.findOwnerByCity("Nowhere")).willReturn(ownerMapper.toOwners(noOwners));
+        this.mockMvc.perform(get("/api/owners?city=Nowhere")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "OWNER_ADMIN")
+    void testGetOwnersListByLastNameAndCitySuccess() throws Exception {
+        List<OwnerDto> franklinMadisonOwners = new ArrayList<>();
+        franklinMadisonOwners.add(owners.get(0));
+        given(this.clinicService.findOwnerByLastNameAndCity("Franklin", "Madison")).willReturn(ownerMapper.toOwners(franklinMadisonOwners));
+        this.mockMvc.perform(get("/api/owners?lastName=Franklin&city=Madison")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType("application/json"))
+            .andExpect(jsonPath("$.[0].id").value(1))
+            .andExpect(jsonPath("$.[0].lastName").value("Franklin"))
+            .andExpect(jsonPath("$.[0].city").value("Madison"));
+    }
+
 }
