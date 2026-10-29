@@ -15,12 +15,14 @@
  */
 package org.springframework.samples.petclinic.repository.jpa;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
@@ -74,6 +76,28 @@ public class JpaVisitRepositoryImpl implements VisitRepository {
 	@Override
 	public Collection<Visit> findAll() throws DataAccessException {
         return this.em.createQuery("SELECT v FROM Visit v").getResultList();
+	}
+
+	@Override
+	public Collection<Visit> findByDateRange(LocalDate from, LocalDate to) throws DataAccessException {
+        StringBuilder jpql = new StringBuilder("SELECT v FROM Visit v");
+        String sep = " WHERE ";
+        if (from != null) {
+            jpql.append(sep).append("v.date >= :from");
+            sep = " AND ";
+        }
+        if (to != null) {
+            jpql.append(sep).append("v.date <= :to");
+        }
+        jpql.append(" ORDER BY v.date, v.id");
+        TypedQuery<Visit> query = this.em.createQuery(jpql.toString(), Visit.class);
+        if (from != null) {
+            query.setParameter("from", from);
+        }
+        if (to != null) {
+            query.setParameter("to", to);
+        }
+        return query.getResultList();
 	}
 
 	@Override

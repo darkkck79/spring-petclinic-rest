@@ -262,6 +262,37 @@ abstract class AbstractClinicServiceTests {
     }
 
     @Test
+    void shouldFindVisitsInDateRangeWithInclusiveBounds() {
+        LocalDate day = LocalDate.of(2013, 1, 2);
+        Collection<Visit> visits = this.clinicService.findVisitsByDateRange(day, day);
+        assertThat(visits).hasSize(1);
+        assertThat(visits.iterator().next().getDate()).isEqualTo(day);
+    }
+
+    @Test
+    void shouldFindVisitsFromDateOnly() {
+        LocalDate from = LocalDate.of(2013, 1, 3);
+        Collection<Visit> visits = this.clinicService.findVisitsByDateRange(from, null);
+        assertThat(visits).allSatisfy(v -> assertThat(v.getDate()).isAfterOrEqualTo(from));
+        assertThat(visits).extracting(Visit::getDate)
+            .contains(LocalDate.of(2013, 1, 3), LocalDate.of(2013, 1, 4));
+    }
+
+    @Test
+    void shouldFindVisitsToDateOnly() {
+        Collection<Visit> visits = this.clinicService.findVisitsByDateRange(null, LocalDate.of(2013, 1, 2));
+        assertThat(visits).extracting(Visit::getDate)
+            .containsExactlyInAnyOrder(LocalDate.of(2013, 1, 1), LocalDate.of(2013, 1, 2));
+    }
+
+    @Test
+    void shouldReturnEmptyCollectionForEmptyDateRange() {
+        Collection<Visit> visits = this.clinicService
+            .findVisitsByDateRange(LocalDate.of(2000, 1, 1), LocalDate.of(2000, 12, 31));
+        assertThat(visits).isEmpty();
+    }
+
+    @Test
     void shouldFindAllVisits(){
         Collection<Visit> visits = this.clinicService.findAllVisits();
         Visit visit1 = EntityUtils.getById(visits, Visit.class, 1);

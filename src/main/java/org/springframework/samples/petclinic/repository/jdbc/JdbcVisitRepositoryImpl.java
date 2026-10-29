@@ -17,6 +17,8 @@ package org.springframework.samples.petclinic.repository.jdbc;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -124,6 +126,27 @@ public class JdbcVisitRepositoryImpl implements VisitRepository {
         return this.namedParameterJdbcTemplate.query(
             "SELECT visits.id as visit_id, pets.id as pets_id, visit_date, description, notes FROM visits LEFT JOIN pets ON visits.pet_id = pets.id",
             params, new JdbcVisitRowMapperExt());
+    }
+
+    @Override
+    public Collection<Visit> findByDateRange(LocalDate from, LocalDate to) throws DataAccessException {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        List<String> conditions = new ArrayList<>();
+        if (from != null) {
+            conditions.add("visits.visit_date >= :from");
+            params.addValue("from", from);
+        }
+        if (to != null) {
+            conditions.add("visits.visit_date <= :to");
+            params.addValue("to", to);
+        }
+        StringBuilder sql = new StringBuilder(
+            "SELECT visits.id as visit_id, pets.id as pets_id, visit_date, description, notes FROM visits LEFT JOIN pets ON visits.pet_id = pets.id");
+        if (!conditions.isEmpty()) {
+            sql.append(" WHERE ").append(String.join(" AND ", conditions));
+        }
+        sql.append(" ORDER BY visits.visit_date, visits.id");
+        return this.namedParameterJdbcTemplate.query(sql.toString(), params, new JdbcVisitRowMapperExt());
     }
 
     @Override

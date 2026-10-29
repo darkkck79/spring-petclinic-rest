@@ -35,6 +35,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * Global Exception handler for REST controllers.
@@ -125,16 +126,8 @@ public class ExceptionControllerAdvice {
             errors.addAllErrors(bindingResult);
             List<ValidationMessageDto> schemaValidationErrors = bindingResult.getFieldErrors().stream()
                 .map(fieldError -> {
-                    String rejectedValue = Objects.toString(fieldError.getRejectedValue(), "null");
                     String defaultMessage = Objects.toString(fieldError.getDefaultMessage(), "Validation failed");
-                    String message = "Field '%s' %s (rejected value: %s)".formatted(
-                        fieldError.getField(),
-                        defaultMessage,
-                        rejectedValue);
-                    return new ValidationMessageDto(message)
-                        .putAdditionalProperty("field", fieldError.getField())
-                        .putAdditionalProperty("rejectedValue", rejectedValue)
-                        .putAdditionalProperty("defaultMessage", defaultMessage);
+                    return validationMessage(fieldError.getField(), fieldError.getRejectedValue(), defaultMessage);
                 })
                 .toList();
             logger.debug("Validation error at {} {}: {}",
@@ -145,6 +138,57 @@ public class ExceptionControllerAdvice {
             return ResponseEntity.status(status).body(detail);
         }
         return ResponseEntity.status(status).body(detail);
+    }
+
+    /**
+     * Handles request parameters that cannot be converted to the declared type, e.g. a non-date value for a date.
+     *
+     * @param e The {@link MethodArgumentTypeMismatchException} to be handled
+     * @param request {@link HttpServletRequest} object referring to the current request.
+     * @return A {@link ResponseEntity} containing the error information and a 400 Bad Request status.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseBody
+    public ResponseEntity<ProblemDetail> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        logger.debug("Type mismatch at {} {}: parameter '{}' value '{}'",
+            request.getMethod(),
+            request.getRequestURI(),
+            e.getName(),
+            e.getValue());
+        ProblemDetail detail = this.detailBuild(e, status, request.getRequestURL(), ERROR_INVALID_REQUEST);
+        String defaultMessage = "has an invalid value (expected type: %s)".formatted(
+            e.getRequiredType() == null ? "unknown" : e.getRequiredType().getSimpleName());
+        detail.setProperty("schemaValidationErrors",
+            List.of(validationMessage(e.getName(), e.getValue(), defaultMessage)));
+        return ResponseEntity.status(status).body(detail);
+    }
+
+    /**
+     * Handles {@link InvalidDateRangeException}, e.g. a range whose lower bound is after its upper bound.
+     *
+     * @param e The {@link InvalidDateRangeException} to be handled
+     * @param request {@link HttpServletRequest} object referring to the current request.
+     * @return A {@link ResponseEntity} containing the error information and a 400 Bad Request status.
+     */
+    @ExceptionHandler(InvalidDateRangeException.class)
+    @ResponseBody
+    public ResponseEntity<ProblemDetail> handleInvalidDateRangeException(InvalidDateRangeException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        logger.debug("Invalid date range at {} {}: {}", request.getMethod(), request.getRequestURI(), e.getMessage());
+        ProblemDetail detail = this.detailBuild(e, status, request.getRequestURL(), ERROR_INVALID_REQUEST);
+        detail.setProperty("schemaValidationErrors",
+            List.of(validationMessage(e.getField(), e.getRejectedValue(), e.getMessage())));
+        return ResponseEntity.status(status).body(detail);
+    }
+
+    private ValidationMessageDto validationMessage(String field, Object rejected, String defaultMessage) {
+        String rejectedValue = Objects.toString(rejected, "null");
+        String message = "Field '%s' %s (rejected value: %s)".formatted(field, defaultMessage, rejectedValue);
+        return new ValidationMessageDto(message)
+            .putAdditionalProperty("field", field)
+            .putAdditionalProperty("rejectedValue", rejectedValue)
+            .putAdditionalProperty("defaultMessage", defaultMessage);
     }
 
 }

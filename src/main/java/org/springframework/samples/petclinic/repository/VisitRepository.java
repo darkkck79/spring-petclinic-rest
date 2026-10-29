@@ -15,6 +15,7 @@
  */
 package org.springframework.samples.petclinic.repository;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
@@ -47,6 +48,12 @@ public interface VisitRepository {
 	Visit findById(int id) throws DataAccessException;
 	
 	Collection<Visit> findAll() throws DataAccessException;
+
+	/**
+	 * Find visits whose date lies within the given range. Both bounds are inclusive; a <code>null</code>
+	 * bound means that side of the range is unbounded.
+	 */
+	Collection<Visit> findByDateRange(LocalDate from, LocalDate to) throws DataAccessException;
 
 	void delete(Visit visit) throws DataAccessException;
 

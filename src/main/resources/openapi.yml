@@ -1097,6 +1097,23 @@ paths:
       operationId: listVisits
       summary: Lists visits
       description: Returns an array of visit .
+      parameters:
+        - name: from
+          in: query
+          description: Only return visits on or after this date (inclusive).
+          required: false
+          schema:
+            type: string
+            format: date
+          example: 2013-01-01
+        - name: to
+          in: query
+          description: Only return visits on or before this date (inclusive).
+          required: false
+          schema:
+            type: string
+            format: date
+          example: 2013-01-04
       responses:
         200:
           description: visits found and returned.
@@ -1118,6 +1135,12 @@ paths:
               description: An ID for this version of the response.
               schema:
                 type: string
+        400:
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         500:
           description: Server error.
           content:
