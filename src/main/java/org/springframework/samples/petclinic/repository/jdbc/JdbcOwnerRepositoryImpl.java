@@ -192,6 +192,33 @@ public class JdbcOwnerRepositoryImpl implements OwnerRepository {
 	    return owners;
 	}
 
+	@Override
+	public Collection<Owner> findByCity(String city) throws DataAccessException {
+		Map<String, Object> params = new HashMap<>();
+		params.put("city", city);
+		List<Owner> owners = this.namedParameterJdbcTemplate.query(
+			"SELECT id, first_name, last_name, address, city, telephone FROM owners WHERE LOWER(city) = LOWER(:city)",
+			params,
+			BeanPropertyRowMapper.newInstance(Owner.class)
+		);
+		loadOwnersPetsAndVisits(owners);
+		return owners;
+	}
+
+	@Override
+	public Collection<Owner> findByLastNameAndCity(String lastName, String city) throws DataAccessException {
+		Map<String, Object> params = new HashMap<>();
+		params.put("lastName", lastName + "%");
+		params.put("city", city);
+		List<Owner> owners = this.namedParameterJdbcTemplate.query(
+			"SELECT id, first_name, last_name, address, city, telephone FROM owners WHERE last_name like :lastName AND LOWER(city) = LOWER(:city)",
+			params,
+			BeanPropertyRowMapper.newInstance(Owner.class)
+		);
+		loadOwnersPetsAndVisits(owners);
+		return owners;
+	}
+
     @Override
     public Page<Owner> findAll(Pageable pageable) throws DataAccessException {
         Map<String, Object> params = new HashMap<>();
