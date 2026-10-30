@@ -30,6 +30,7 @@ import org.springframework.samples.petclinic.mapper.VisitMapper;
 import org.springframework.samples.petclinic.model.Owner;
 import org.springframework.samples.petclinic.rest.advice.ExceptionControllerAdvice;
 import org.springframework.samples.petclinic.rest.dto.OwnerDto;
+import org.springframework.samples.petclinic.rest.filter.OwnerETagFilter;
 import org.springframework.samples.petclinic.rest.dto.PetDto;
 import org.springframework.samples.petclinic.rest.dto.PetTypeDto;
 import org.springframework.samples.petclinic.rest.dto.VisitDto;
@@ -93,6 +94,7 @@ class OwnerRestControllerV1Tests {
     void initOwners() {
         this.mockMvc = MockMvcBuilders.standaloneSetup(ownerRestControllerV1)
             .setControllerAdvice(new ExceptionControllerAdvice())
+            .addFilters(new OwnerETagFilter())
             .build();
         owners = new ArrayList<>();
 
@@ -141,13 +143,13 @@ class OwnerRestControllerV1Tests {
     private PetDto getTestPetWithIdAndName(final int id, final String name) {
         PetTypeDto petType = new PetTypeDto();
         PetDto pet = new PetDto();
-        pet.id(id).name(name).birthDate(LocalDate.now()).type(petType.id(2).name("dog")).addVisitsItem(getTestVisitForPet(1));
+        pet.id(id).name(name).birthDate(LocalDate.of(2010, 9, 7)).type(petType.id(2).name("dog")).addVisitsItem(getTestVisitForPet(1));
         return pet;
     }
 
     private VisitDto getTestVisitForPet(final int id) {
         VisitDto visit = new VisitDto();
-        return visit.id(id).date(LocalDate.now()).description("test" + id);
+        return visit.id(id).date(LocalDate.of(2013, 1, 1)).description("test" + id);
     }
 
     @Test
@@ -159,7 +161,8 @@ class OwnerRestControllerV1Tests {
             .andExpect(status().isOk())
             .andExpect(content().contentType("application/json"))
             .andExpect(jsonPath("$.id").value(1))
-            .andExpect(jsonPath("$.firstName").value("George"));
+            .andExpect(jsonPath("$.firstName").value("George"))
+            .andExpect(header().string("ETag", "W/\"05db048dffb13760d306d2c2da9792c2\""));
     }
 
     @Test
@@ -168,7 +171,8 @@ class OwnerRestControllerV1Tests {
         given(this.clinicService.findOwnerById(2)).willReturn(null);
         this.mockMvc.perform(get("/api/owners/2")
                 .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound())
+            .andExpect(header().doesNotExist("ETag"));
     }
 
     @Test
