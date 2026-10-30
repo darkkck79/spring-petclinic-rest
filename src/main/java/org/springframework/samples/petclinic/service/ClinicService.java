@@ -29,6 +29,7 @@ import org.springframework.samples.petclinic.model.PetType;
 import org.springframework.samples.petclinic.model.Specialty;
 import org.springframework.samples.petclinic.model.Vet;
 import org.springframework.samples.petclinic.model.Visit;
+import org.springframework.samples.petclinic.repository.PetSort;
 
 /**
  * Mostly used as a facade so all controllers have a single point of entry
@@ -40,6 +41,7 @@ public interface ClinicService {
 
 	Pet findPetById(int id) throws DataAccessException;
 	Collection<Pet> findAllPets() throws DataAccessException;
+	Collection<Pet> findAllPets(PetSort sort) throws DataAccessException;
     Page<Pet> findPets(Pageable pageable) throws DataAccessException;
 	void savePet(Pet pet) throws DataAccessException;
 	void deletePet(Pet pet) throws DataAccessException;

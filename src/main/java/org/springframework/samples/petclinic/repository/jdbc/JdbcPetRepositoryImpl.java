@@ -42,6 +42,7 @@ import org.springframework.samples.petclinic.model.PetType;
 import org.springframework.samples.petclinic.model.Visit;
 import org.springframework.samples.petclinic.repository.OwnerRepository;
 import org.springframework.samples.petclinic.repository.PetRepository;
+import org.springframework.samples.petclinic.repository.PetSort;
 import org.springframework.samples.petclinic.util.EntityUtils;
 import org.springframework.stereotype.Repository;
 
@@ -127,11 +128,26 @@ public class JdbcPetRepositoryImpl implements PetRepository {
 
 	@Override
 	public Collection<Pet> findAll() throws DataAccessException {
+		return findAllPets("");
+	}
+
+	@Override
+	public Collection<Pet> findAll(PetSort sort) throws DataAccessException {
+		String orderBy = switch (sort) {
+			case NAME_ASC -> " ORDER BY LOWER(name) ASC, pets.id ASC";
+			case NAME_DESC -> " ORDER BY LOWER(name) DESC, pets.id ASC";
+			case BIRTH_DATE_ASC -> " ORDER BY birth_date ASC, pets.id ASC";
+			case BIRTH_DATE_DESC -> " ORDER BY birth_date DESC, pets.id ASC";
+		};
+		return findAllPets(orderBy);
+	}
+
+	private Collection<Pet> findAllPets(String orderBy) {
 		Map<String, Object> params = new HashMap<>();
 		Collection<Pet> pets = new ArrayList<>();
 		Collection<JdbcPet> jdbcPets;
 		jdbcPets = this.namedParameterJdbcTemplate
-				.query("SELECT pets.id as pets_id, name, birth_date, type_id, owner_id FROM pets",
+				.query("SELECT pets.id as pets_id, name, birth_date, type_id, owner_id FROM pets" + orderBy,
 				params,
 				new JdbcPetRowMapper());
 		Collection<PetType> petTypes = this.namedParameterJdbcTemplate.query("SELECT id, name FROM types ORDER BY name",

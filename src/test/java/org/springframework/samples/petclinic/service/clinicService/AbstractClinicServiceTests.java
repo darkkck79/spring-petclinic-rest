@@ -21,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.samples.petclinic.model.*;
+import org.springframework.samples.petclinic.repository.PetSort;
 import org.springframework.samples.petclinic.service.ClinicService;
 import org.springframework.samples.petclinic.util.EntityUtils;
 import org.springframework.test.context.ContextConfiguration;
@@ -210,6 +211,30 @@ abstract class AbstractClinicServiceTests {
         assertThat(pet1.getName()).isEqualTo("Leo");
         Pet pet3 = EntityUtils.getById(pets, Pet.class, 3);
         assertThat(pet3.getName()).isEqualTo("Rosy");
+    }
+
+    private List<Integer> sortedPetIds(PetSort sort) {
+        return this.clinicService.findAllPets(sort).stream().map(Pet::getId).toList();
+    }
+
+    @Test
+    void shouldFindAllPetsSortedByNameAsc() {
+        assertThat(sortedPetIds(PetSort.NAME_ASC)).containsExactly(2, 11, 6, 5, 4, 1, 9, 12, 8, 10, 3, 7, 13);
+    }
+
+    @Test
+    void shouldFindAllPetsSortedByNameDesc() {
+        assertThat(sortedPetIds(PetSort.NAME_DESC)).containsExactly(13, 7, 3, 10, 8, 9, 12, 1, 4, 5, 6, 11, 2);
+    }
+
+    @Test
+    void shouldFindAllPetsSortedByBirthDateAsc() {
+        assertThat(sortedPetIds(PetSort.BIRTH_DATE_ASC)).containsExactly(10, 6, 4, 11, 12, 1, 5, 3, 9, 13, 2, 7, 8);
+    }
+
+    @Test
+    void shouldFindAllPetsSortedByBirthDateDesc() {
+        assertThat(sortedPetIds(PetSort.BIRTH_DATE_DESC)).containsExactly(7, 8, 2, 13, 9, 3, 5, 1, 12, 11, 4, 6, 10);
     }
 
     @Test

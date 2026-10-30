@@ -109,6 +109,28 @@ public class ExceptionControllerAdvice {
     }
 
     /**
+     * Handles {@link InvalidRequestParameterException} thrown for a request parameter with a disallowed value.
+     *
+     * @param e The {@link InvalidRequestParameterException} to be handled
+     * @param request {@link HttpServletRequest} object referring to the current request.
+     * @return A {@link ResponseEntity} containing the error information and a 400 Bad Request status.
+     */
+    @ExceptionHandler(InvalidRequestParameterException.class)
+    @ResponseBody
+    public ResponseEntity<ProblemDetail> handleInvalidRequestParameterException(InvalidRequestParameterException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        ProblemDetail detail = this.detailBuild(e, status, request.getRequestURL(), ERROR_INVALID_REQUEST);
+        String defaultMessage = "must be one of " + e.getAllowedValues();
+        String message = "Field '%s' %s (rejected value: %s)".formatted(
+            e.getParameter(), defaultMessage, e.getRejectedValue());
+        detail.setProperty("schemaValidationErrors", List.of(new ValidationMessageDto(message)
+            .putAdditionalProperty("field", e.getParameter())
+            .putAdditionalProperty("rejectedValue", e.getRejectedValue())
+            .putAdditionalProperty("defaultMessage", defaultMessage)));
+        return ResponseEntity.status(status).body(detail);
+    }
+
+    /**
      * Handles exception thrown by Bean Validation on controller methods parameters
      *
      * @param e The {@link MethodArgumentNotValidException} to be handled

@@ -25,6 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.samples.petclinic.mapper.PetMapper;
 import org.springframework.samples.petclinic.model.Pet;
+import org.springframework.samples.petclinic.repository.PetSort;
 import org.springframework.samples.petclinic.rest.advice.ExceptionControllerAdvice;
 import org.springframework.samples.petclinic.rest.dto.OwnerDto;
 import org.springframework.samples.petclinic.rest.dto.PetDto;
@@ -46,6 +47,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -138,6 +140,41 @@ class PetRestControllerV1Tests {
             .andExpect(jsonPath("$.[0].name").value("Rosy"))
             .andExpect(jsonPath("$.[1].id").value(4))
             .andExpect(jsonPath("$.[1].name").value("Jewel"));
+    }
+
+    @Test
+    @WithMockUser(roles = "OWNER_ADMIN")
+    void testGetAllPetsSortedSuccess() throws Exception {
+        final Collection<Pet> mockPets = petMapper.toPets(this.pets);
+        when(this.clinicService.findAllPets(PetSort.NAME_DESC)).thenReturn(mockPets);
+
+        this.mockMvc.perform(get("/api/pets")
+                .param("sort", "-name")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType("application/json"))
+            .andExpect(jsonPath("$.[0].id").value(3))
+            .andExpect(jsonPath("$.[1].id").value(4));
+    }
+
+    @Test
+    @WithMockUser(roles = "OWNER_ADMIN")
+    void testGetAllPetsInvalidSortBadRequest() throws Exception {
+        for (String invalid : List.of("age", "NAME")) {
+            this.mockMvc.perform(get("/api/pets")
+                    .param("sort", invalid)
+                    .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.title").value("InvalidRequestParameterException"))
+                .andExpect(jsonPath("$.detail").value("The request contains invalid or missing parameters"))
+                .andExpect(jsonPath("$.schemaValidationErrors").isArray())
+                .andExpect(jsonPath("$.schemaValidationErrors[0].message").exists())
+                .andExpect(jsonPath("$.schemaValidationErrors[0].field").value("sort"))
+                .andExpect(jsonPath("$.schemaValidationErrors[0].rejectedValue").value(invalid))
+                .andExpect(jsonPath("$.schemaValidationErrors[0].defaultMessage").exists());
+        }
+        verifyNoInteractions(this.clinicService);
     }
 
     @Test

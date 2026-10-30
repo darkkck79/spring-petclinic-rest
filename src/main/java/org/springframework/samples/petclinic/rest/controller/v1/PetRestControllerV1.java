@@ -20,6 +20,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.samples.petclinic.mapper.PetMapper;
 import org.springframework.samples.petclinic.model.Pet;
+import org.springframework.samples.petclinic.repository.PetSort;
+import org.springframework.samples.petclinic.rest.advice.InvalidRequestParameterException;
 import org.springframework.samples.petclinic.rest.api.PetsApi;
 import org.springframework.samples.petclinic.rest.dto.PetDto;
 import org.springframework.samples.petclinic.service.ClinicService;
@@ -29,6 +31,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -61,8 +65,16 @@ public class PetRestControllerV1 implements PetsApi {
 
     @PreAuthorize("hasRole(@roles.OWNER_ADMIN)")
     @Override
-    public ResponseEntity<List<PetDto>> listPets() {
-        List<PetDto> pets = new ArrayList<>(petMapper.toPetsDto(this.clinicService.findAllPets()));
+    public ResponseEntity<List<PetDto>> listPets(String sort) {
+        Collection<Pet> found;
+        if (sort == null) {
+            found = this.clinicService.findAllPets();
+        } else {
+            PetSort petSort = PetSort.fromValue(sort).orElseThrow(() -> new InvalidRequestParameterException(
+                "sort", sort, Arrays.stream(PetSort.values()).map(PetSort::getValue).toList()));
+            found = this.clinicService.findAllPets(petSort);
+        }
+        List<PetDto> pets = new ArrayList<>(petMapper.toPetsDto(found));
         if (pets.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
