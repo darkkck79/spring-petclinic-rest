@@ -45,6 +45,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -164,6 +166,61 @@ class VisitRestControllerV1Tests {
         	.andExpect(jsonPath("$.[0].notes").value("Owner reports mild lethargy."))
         	.andExpect(jsonPath("$.[1].id").value(3))
         	.andExpect(jsonPath("$.[1].description").value("neutered"));
+    }
+
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testGetVisitsInDateRangeSuccess() throws Exception {
+        given(this.clinicService.findVisitsByDateRange(LocalDate.of(2013, 1, 1), LocalDate.of(2013, 1, 31)))
+            .willReturn(visits);
+        this.mockMvc.perform(get("/api/visits?from=2013-01-01&to=2013-01-31")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType("application/json"))
+            .andExpect(jsonPath("$.[0].id").value(2))
+            .andExpect(jsonPath("$.[1].id").value(3));
+    }
+
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testGetVisitsInEmptyDateRangeReturnsEmptyArray() throws Exception {
+        given(this.clinicService.findVisitsByDateRange(LocalDate.of(2000, 1, 1), null))
+            .willReturn(new ArrayList<>());
+        this.mockMvc.perform(get("/api/visits?from=2000-01-01")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testGetVisitsFromAfterToBadRequest() throws Exception {
+        this.mockMvc.perform(get("/api/visits?from=2013-01-04&to=2013-01-02")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.title").value("InvalidDateRangeException"))
+            .andExpect(jsonPath("$.detail").value("The request contains invalid or missing parameters"))
+            .andExpect(jsonPath("$.schemaValidationErrors").isArray())
+            .andExpect(jsonPath("$.schemaValidationErrors[0].message").exists())
+            .andExpect(jsonPath("$.schemaValidationErrors[0].field").value("from"))
+            .andExpect(jsonPath("$.schemaValidationErrors[0].defaultMessage").exists())
+            .andExpect(jsonPath("$.schemaValidationErrors[0].rejectedValue").value("2013-01-04"));
+        verify(this.clinicService, never()).findVisitsByDateRange(any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testGetVisitsInvalidDateBadRequest() throws Exception {
+        this.mockMvc.perform(get("/api/visits?from=yesterday")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.title").value("MethodArgumentTypeMismatchException"))
+            .andExpect(jsonPath("$.detail").value("The request contains invalid or missing parameters"))
+            .andExpect(jsonPath("$.schemaValidationErrors").isArray())
+            .andExpect(jsonPath("$.schemaValidationErrors[0].message").exists())
+            .andExpect(jsonPath("$.schemaValidationErrors[0].field").value("from"))
+            .andExpect(jsonPath("$.schemaValidationErrors[0].defaultMessage").exists())
+            .andExpect(jsonPath("$.schemaValidationErrors[0].rejectedValue").value("yesterday"));
     }
 
     @Test

@@ -25,6 +25,7 @@ import org.springframework.samples.petclinic.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -90,6 +91,12 @@ public class ClinicServiceImpl implements ClinicService {
     @Transactional(readOnly = true)
     public Collection<Visit> findAllVisits() throws DataAccessException {
         return visitRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Collection<Visit> findVisitsByDateRange(LocalDate from, LocalDate to) throws DataAccessException {
+        return visitRepository.findByDateRange(from, to);
     }
 
     @Override

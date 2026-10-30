@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.samples.petclinic.mapper.VisitMapper;
 import org.springframework.samples.petclinic.model.Visit;
+import org.springframework.samples.petclinic.rest.advice.InvalidDateRangeException;
 import org.springframework.samples.petclinic.rest.api.VisitsApi;
 import org.springframework.samples.petclinic.rest.dto.VisitDto;
 import org.springframework.samples.petclinic.rest.dto.VisitFieldsDto;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.transaction.Transactional;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,7 +56,14 @@ public class VisitRestControllerV1 implements VisitsApi {
 
     @PreAuthorize("hasRole(@roles.OWNER_ADMIN)")
     @Override
-    public ResponseEntity<List<VisitDto>> listVisits() {
+    public ResponseEntity<List<VisitDto>> listVisits(LocalDate from, LocalDate to) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new InvalidDateRangeException("from", from.toString(), "must not be after 'to' (" + to + ")");
+        }
+        if (from != null || to != null) {
+            List<Visit> filtered = new ArrayList<>(this.clinicService.findVisitsByDateRange(from, to));
+            return new ResponseEntity<>(new ArrayList<>(visitMapper.toVisitsDto(filtered)), HttpStatus.OK);
+        }
         List<Visit> visits = new ArrayList<>(this.clinicService.findAllVisits());
         if (visits.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
